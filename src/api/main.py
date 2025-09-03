@@ -9,7 +9,7 @@ setup_logging()
 app = FastAPI(
     title="Presidio-NL API",
     description="API voor Nederlandse tekst analyse en anonimisatie",
-    version="0.3.0",
+    version="1.2.0",
     docs_url="/api/v1/docs",
     openapi_url="/api/v1/openapi.json",
     redoc_url="/api/v1/redoc",

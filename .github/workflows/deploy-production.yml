@@ -73,10 +73,8 @@ jobs:
           elif [[ "${{ github.ref }}" == refs/tags/* ]]; then
             VERSION=${GITHUB_REF#refs/tags/}
           else
-            # Main branch push - create version from date and commit
-            DATE=$(date +%Y.%m.%d)
-            SHORT_SHA=${GITHUB_SHA:0:7}
-            VERSION="v${DATE}-${SHORT_SHA}"
+            # Main branch push - use latest git tag or fallback to commit
+            VERSION=$(git describe --tags --abbrev=0 2>/dev/null || echo "v1.2.0")
           fi
           
           echo "version=${VERSION}" >> $GITHUB_OUTPUT
@@ -103,27 +101,15 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Update production values
+      - name: Deployment summary
         run: |
           VERSION="${{ steps.version.outputs.version }}"
-          
-          # Update values.yaml for production
-          sed -i "s/tag: .*/tag: ${VERSION}/" charts/openanonymiser/values.yaml
-          
-          # Enable SSL for production
-          sed -i 's/nginx.ingress.kubernetes.io\/ssl-redirect: "false"/nginx.ingress.kubernetes.io\/ssl-redirect: "true"/' charts/openanonymiser/values.yaml
-          
-          # Add cert-manager annotation
-          if ! grep -q "cert-manager.io/cluster-issuer" charts/openanonymiser/values.yaml; then
-            sed -i '/annotations:/a\    cert-manager.io/cluster-issuer: "letsencrypt-prod"' charts/openanonymiser/values.yaml
-          fi
-          
-          # Commit production config
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          git add charts/openanonymiser/values.yaml
-          git commit -m "deploy: Production deployment ${VERSION} with SSL enabled" || exit 0
-          git push origin main
+          echo "🚀 Docker images built and pushed:" >> $GITHUB_STEP_SUMMARY
+          echo "- \`${{ env.IMAGE_NAME }}:${VERSION}\`" >> $GITHUB_STEP_SUMMARY  
+          echo "- \`${{ env.IMAGE_NAME }}:latest\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "🎯 ArgoCD will automatically deploy this version to production" >> $GITHUB_STEP_SUMMARY
+          echo "📊 Monitor deployment: https://argocd.commonground.nu" >> $GITHUB_STEP_SUMMARY
 
       - name: Create GitHub Release
         if: startsWith(github.ref, 'refs/tags/')

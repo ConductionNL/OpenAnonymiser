@@ -26,6 +26,20 @@ COPY --chown=presidio:presidio src/api ./src/api
 COPY --chown=presidio:presidio api.py ./
 COPY --chown=presidio:presidio scripts/healthcheck.py ./scripts/
 
+# Pre-download transformers models during build to avoid runtime download
+ENV TRANSFORMERS_CACHE=/home/presidio/.cache/transformers
+ENV HF_HOME=/home/presidio/.cache/huggingface
+RUN mkdir -p /home/presidio/.cache/transformers /home/presidio/.cache/huggingface && \
+    chown -R presidio:presidio /home/presidio/.cache
+
+# Download the Dutch RoBERTa model during build
+RUN .venv/bin/python -c "from transformers import AutoTokenizer, AutoModelForTokenClassification; \
+    model_name = 'pdelobelle/robbert-v2-dutch-base'; \
+    print(f'Downloading {model_name}...'); \
+    tokenizer = AutoTokenizer.from_pretrained(model_name); \
+    model = AutoModelForTokenClassification.from_pretrained(model_name); \
+    print('Model downloaded successfully!')"
+
 EXPOSE 8080
 
 # Add Docker healthcheck

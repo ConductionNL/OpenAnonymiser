@@ -21,6 +21,7 @@ class Settings:
         "EMAIL",
         "ORGANIZATION",
         "IBAN",
+        "DATE_TIME",
         "ADDRESS",
     ]
 
@@ -41,6 +42,7 @@ class Settings:
         "EMAIL",
         "ORGANIZATION",
         "IBAN",
+        "DATE_TIME",
         "ADDRESS",
     ]
     key = os.getenv("CRYPTO_KEY")

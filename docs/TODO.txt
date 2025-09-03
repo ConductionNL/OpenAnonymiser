@@ -1,3 +1,0 @@
-- add some sort of auth
-- generalize the anonymization_events into an events table: for downloads, anonymizations, uploads, etc.
-- 

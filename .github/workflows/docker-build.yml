@@ -1,0 +1,73 @@
+name: Build and Push Docker Images
+
+on:
+  push:
+    branches: [ main, staging, development ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  REGISTRY: docker.io
+  IMAGE_NAME: mwest2020/openanonymiser
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Needed for git describe
+
+      - name: Determine version and tags
+        id: meta
+        run: |
+          if [[ $GITHUB_REF == refs/heads/main ]]; then
+            # Main branch - use latest git tag + latest
+            VERSION=$(git describe --tags --abbrev=0 2>/dev/null || echo "v1.2.0")
+            TAGS="${{ env.IMAGE_NAME }}:${VERSION},${{ env.IMAGE_NAME }}:latest"
+          elif [[ $GITHUB_REF == refs/heads/staging ]] || [[ $GITHUB_REF == refs/heads/development ]]; then
+            # Staging/development branches - always dev tag
+            VERSION="dev"
+            TAGS="${{ env.IMAGE_NAME }}:dev"
+          else
+            # PR or other branch - dev tag only (no push)
+            VERSION="dev-${GITHUB_SHA::7}"
+            TAGS="${{ env.IMAGE_NAME }}:dev"
+          fi
+          
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "tags=${TAGS}" >> $GITHUB_OUTPUT
+          echo "📦 Building version: ${VERSION}" >> $GITHUB_STEP_SUMMARY
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Image pushed summary
+        if: github.event_name != 'pull_request'
+        run: |
+          echo "🚀 **Docker images pushed to Docker Hub:**" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          IFS=',' read -ra TAG_ARRAY <<< "${{ steps.meta.outputs.tags }}"
+          for tag in "${TAG_ARRAY[@]}"; do
+            echo "- \`${tag}\`" >> $GITHUB_STEP_SUMMARY
+          done
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "🎯 **ArgoCD can now deploy:** \`${{ steps.meta.outputs.version }}\`" >> $GITHUB_STEP_SUMMARY

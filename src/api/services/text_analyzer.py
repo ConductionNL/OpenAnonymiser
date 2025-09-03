@@ -7,9 +7,14 @@ from presidio_analyzer.nlp_engine import NlpEngineProvider
 from src.api.config import settings
 from src.api.utils.nlp.loader import load_nlp_engine
 from src.api.utils.patterns import (
-    DutchEmailRecognizer,
+    EmailRecognizer,
     DutchIBANRecognizer,
+    DutchBSNRecognizer,
+    DutchDateRecognizer,
     DutchPhoneNumberRecognizer,
+    DutchPassportIdRecognizer,
+    DutchDriversLicenseRecognizer,
+    CaseNumberRecognizer,
 )
 
 
@@ -44,12 +49,13 @@ class ModularTextAnalyzer:
             config_dict={"nlp_engine": nlp_engine, "model_name": model_name}
         )
 
+        # Presidio always uses SpaCy for pattern recognizers, regardless of our NLP engine choice
         spacy_config = {
-            "nlp_engine_name": nlp_engine,
+            "nlp_engine_name": "spacy",  # Presidio only supports spacy
             "models": [
                 {
                     "lang_code": settings.DEFAULT_LANGUAGE,
-                    "model_name": model_name,
+                    "model_name": settings.DEFAULT_SPACY_MODEL,  # Always use SpaCy model for Presidio
                 }
             ],
         }
@@ -64,7 +70,12 @@ class ModularTextAnalyzer:
         recognizers_to_add = [
             DutchPhoneNumberRecognizer(),
             DutchIBANRecognizer(),
-            DutchEmailRecognizer(),
+            DutchBSNRecognizer(),
+            DutchDateRecognizer(),
+            EmailRecognizer(),
+            DutchPassportIdRecognizer(),
+            DutchDriversLicenseRecognizer(),
+            CaseNumberRecognizer(),
         ]
         for recognizer in recognizers_to_add:
             registry.add_recognizer(recognizer=recognizer)
@@ -96,7 +107,7 @@ class ModularTextAnalyzer:
             list: lijst van gedetecteerde entiteiten met hun start- en eindposities, type en score.
         """
         logging.debug(f"Analyzing text with {entities=} and {language=}")
-        
+
         # Analyze with NLP engine (supports entity filtering)
         nlp_results = self.nlp_engine.analyze(text, entities, language)
         print(f"nlp_results: {nlp_results}")
@@ -104,7 +115,9 @@ class ModularTextAnalyzer:
         # Use pattern recognizers via Presidio AnalyzerEngine (detect ALL patterns first)
         try:
             pattern_results: List[RecognizerResult] = self.analyzer.analyze(
-                text=text, entities=None, language=language  # Don't filter here
+                text=text,
+                entities=None,
+                language=language,  # Don't filter here
             )
             print(f"pattern_results: {pattern_results}")
         except Exception as e:
@@ -122,14 +135,14 @@ class ModularTextAnalyzer:
             }
             for r in pattern_results
         ]
-        
+
         # Combine all results
         all_results = nlp_results + pattern_dicts
-        
+
         # Filter by requested entities if specified
         if entities and entities != settings.DEFAULT_ENTITIES:
             all_results = [r for r in all_results if r["entity_type"] in entities]
-        
+
         # Deduplication based on start, end, entity_type
         seen = set()
         unique_results = []

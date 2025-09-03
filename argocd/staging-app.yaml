@@ -1,0 +1,23 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: openanonymiser-staging
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/ConductionNL/OpenAnonymiser.git
+    targetRevision: development  # ← Staging wijst naar development branch  
+    path: charts/openanonymiser
+    helm:
+      valueFiles:
+        - values-staging.yaml  # ← Use staging-specific values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: openanonymiser-staging  # ← Staging namespace
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
