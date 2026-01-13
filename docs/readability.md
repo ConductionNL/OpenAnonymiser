@@ -68,6 +68,44 @@ Bepaling gebeurt primair op LIX (drempels): `<30 easy`, `<40 medium`, `<55 compl
 - Lege tekst → 400
 - Extreem lange tekst (>200.000 tekens) → 400
 
+## Configuratieprofielen (local/online)
+
+We gebruiken EXACT twee configbestanden (YAML), geselecteerd via `READABILITY_PROFILE`:
+
+- `config/readability.local.yaml` (debug aan, voor ontwikkeling)
+- `config/readability.online.yaml` (debug uit, voor productie)
+
+Belangrijke keys (defaults):
+
+```yaml
+version: 1
+limits:
+  max_text_length: 200000
+lix:
+  long_word_min_len: 7            # betekent >6 letters
+  judgement_bands:
+    easy: 30.0
+    medium: 40.0
+    complex: 55.0                 # >= complex => very_complex
+flesch_douma:
+  enabled_by_default: false       # alleen op aanvraag via metrics
+  syllables_per_word_min: 0.8
+  syllables_per_word_max: 4.0
+  invalid_policy: "null"          # of "status_object" (nu null)
+output:
+  include_debug_fields: true|false
+  include_cefr_hint: true
+  cefr_confidence_cap: 0.4
+```
+
+Selecteer profiel met:
+
+```bash
+READABILITY_PROFILE=local uv run api.py
+```
+
+Als een configbestand ontbreekt of ongeldig is, faalt de app meteen met een duidelijke foutmelding.
+
 ## Voorbeeld
 
 Request:

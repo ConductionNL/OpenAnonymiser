@@ -1,0 +1,19 @@
+version: 1
+limits:
+  max_text_length: 200000
+lix:
+  long_word_min_len: 7
+  judgement_bands:
+    easy: 30.0
+    medium: 40.0
+    complex: 55.0
+flesch_douma:
+  enabled_by_default: false
+  syllables_per_word_min: 0.8
+  syllables_per_word_max: 4.0
+  invalid_policy: "null"
+output:
+  include_debug_fields: true
+  include_cefr_hint: true
+  cefr_confidence_cap: 0.4
+

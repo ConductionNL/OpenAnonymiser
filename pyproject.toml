@@ -17,6 +17,7 @@ dependencies = [
     "pycryptodome>=3.23.0",
     "sqlalchemy>=2.0.41",
     "pymupdf>=1.26.3",
+    "PyYAML>=6.0.2",
 ]
 authors = [
     { name = "Mark Westerweel", email = "mark.westerweel@conduction.nl" },

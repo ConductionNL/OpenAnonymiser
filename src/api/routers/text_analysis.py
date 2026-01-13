@@ -199,7 +199,6 @@ async def analyze_readability(
         payload = {
             "word_count": stats.word_count,
             "sentence_count": stats.sentence_count,
-            "syllables_per_word": stats.syllables_per_word,
             "metrics_computed": sorted(list(metrics_requested)),
             "judgement": stats.judgement,
             "cefr_hint": stats.cefr_hint,
@@ -214,6 +213,13 @@ async def analyze_readability(
                     "long_word_pct": stats.long_word_pct,
                 }
             )
+
+        # Optional debug fields controlled by config
+        from src.api.readability_config import get_readability_config
+
+        cfg = get_readability_config()
+        if cfg.output.include_debug_fields:
+            payload["syllables_per_word"] = stats.syllables_per_word
 
         if include_flesch:
             payload["flesch_douma"] = stats.flesch_douma

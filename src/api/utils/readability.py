@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from typing import Iterable, Optional
 
 from src.api.config import settings
+from src.api.readability_config import get_readability_config
 
 
 SENTENCE_SPLIT_RE = re.compile(r"[.!?]+")
@@ -40,7 +41,8 @@ def _tokenize_words(text: str) -> list[str]:
 def _is_long_word(word: str) -> bool:
     # Long words: strictly more than threshold-1 letters; default > 6 letters
     letters = sum(1 for ch in word if ch.isalpha())
-    return letters > (settings.LONG_WORD_LEN - 1)
+    cfg = get_readability_config()
+    return letters > (cfg.lix.long_word_min_len - 1)
 
 
 def _count_syllables(word: str) -> int:
@@ -86,6 +88,7 @@ def _cefr_from_lix(lix: float) -> tuple[str, float]:
 def compute_readability(
     text: str, include_flesch_douma: bool = False
 ) -> ReadabilityStats:
+    cfg = get_readability_config()
     sentences = _split_sentences(text)
     words = _tokenize_words(text)
     word_count = len(words)
@@ -121,7 +124,10 @@ def compute_readability(
     flesch: Optional[float] = None
     if include_flesch_douma:
         # Guardrails for absurd estimates
-        if spw is not None and (spw > 4.0 or spw < 0.8):
+        if spw is not None and (
+            spw > cfg.flesch_douma.syllables_per_word_max
+            or spw < cfg.flesch_douma.syllables_per_word_min
+        ):
             flesch = None
             flesch_status = "invalid_syllable_estimate"
         else:
@@ -129,6 +135,8 @@ def compute_readability(
             flesch_status = "ok"
 
     cefr_hint, cefr_conf = _cefr_from_lix(lix)
+    # Cap CEFR confidence
+    cefr_conf = min(cefr_conf or 0.0, get_readability_config().output.cefr_confidence_cap)
 
     return ReadabilityStats(
         word_count=word_count,
@@ -148,18 +156,19 @@ def compute_readability(
 
 def _make_judgement(lix: float, long_word_pct: float, avg_sentence_len: float) -> dict:
     """Produce deterministic judgement from metrics."""
-    # Bands based on LIX
-    if lix < 30:
+    cfg = get_readability_config()
+    bands = cfg.lix.judgement_bands
+    if lix < bands.easy:
         band = "easy"
         label = "Eenvoudig"
         suitable = ["brede publiekscommunicatie", "korte webteksten"]
         not_suitable = ["wet- en regelgeving", "specialistische rapporten"]
-    elif lix < 40:
+    elif lix < bands.medium:
         band = "medium"
         label = "Gemiddeld"
         suitable = ["algemene voorlichting", "nieuwsbrieven"]
         not_suitable = ["academische publicaties", "juridische documenten"]
-    elif lix < 55:
+    elif lix < bands.complex:
         band = "complex"
         label = "Complex"
         suitable = ["vakpublicaties", "beleidsnota’s"]

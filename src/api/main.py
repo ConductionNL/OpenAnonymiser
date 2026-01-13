@@ -2,9 +2,13 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from src.api.config import settings, setup_logging
+from src.api.readability_config import get_readability_config
 from src.api.routers import router
 
 setup_logging()
+
+# Load readability config at startup (fail fast if invalid/missing)
+_ = get_readability_config()
 
 app = FastAPI(
     title="Presidio-NL API",
