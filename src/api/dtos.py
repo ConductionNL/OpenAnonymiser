@@ -190,3 +190,43 @@ class AnonymizeTextResponse(BaseModel):
     processing_time_ms: Optional[int] = None
     nlp_engine_used: Optional[str] = None
     anonymization_strategy: Optional[str] = None
+
+
+# ===== READABILITY ENDPOINT DTOs =====
+
+class ReadabilityRequest(BaseModel):
+    """Request DTO for POST /api/v1/analyze/readability endpoint."""
+
+    text: str
+    language: str = settings.DEFAULT_LANGUAGE
+    metrics: Optional[list[str]] = None  # e.g., ["lix", "flesch_douma", "stats"]
+
+    @field_validator("text")
+    def validate_text_not_empty(cls, value: str) -> str:
+        clean = (value or "").strip()
+        if not clean:
+            raise ValueError("Text cannot be empty")
+        # Reject extremely long inputs to avoid abuse (e.g., > 200k chars)
+        if len(clean) > 200_000:
+            raise ValueError("Text too long; please submit <= 200,000 characters")
+        return clean
+
+    @field_validator("language")
+    def validate_language(cls, value: str) -> str:
+        if value not in ["nl"]:
+            raise ValueError("Only 'nl' is supported for readability metrics at this time")
+        return value
+
+
+class ReadabilityResponse(BaseModel):
+    """Response DTO for readability analysis."""
+
+    lix: Optional[float] = None
+    flesch_douma: Optional[float] = None
+    avg_sentence_length: Optional[float] = None
+    long_word_pct: Optional[float] = None
+    word_count: int
+    sentence_count: int
+    cefr_hint: Optional[str] = None
+    cefr_confidence: Optional[float] = None
+    metrics_computed: list[str]

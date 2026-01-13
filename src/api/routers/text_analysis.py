@@ -13,6 +13,8 @@ from src.api.dtos import (
     PIIEntity,
 )
 from src.api.services.text_analyzer import ModularTextAnalyzer
+from src.api.dtos import ReadabilityRequest, ReadabilityResponse
+from src.api.utils.readability import compute_readability
 
 logger = logging.getLogger(__name__)
 text_analysis_router = APIRouter(tags=["text-analysis"])
@@ -166,4 +168,50 @@ async def anonymize_text(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Text anonymization failed: {str(e)}",
+        )
+
+
+@text_analysis_router.post("/analyze/readability")
+async def analyze_readability(
+    request: ReadabilityRequest,
+) -> ReadabilityResponse:
+    """Compute readability metrics (LIX, basic stats, optional Flesch–Douma) for Dutch text.
+
+    This does not anonymize or alter the text; pure analysis only.
+    """
+    try:
+        metrics_requested = {m.lower() for m in (request.metrics or ["lix", "stats"])}
+        include_flesch = "flesch_douma" in metrics_requested
+
+        stats = compute_readability(request.text, include_flesch_douma=include_flesch)
+
+        payload = {
+            "word_count": stats.word_count,
+            "sentence_count": stats.sentence_count,
+            "metrics_computed": sorted(list(metrics_requested)),
+        }
+
+        if "lix" in metrics_requested:
+            payload.update(
+                {
+                    "lix": stats.lix,
+                    "avg_sentence_length": stats.avg_sentence_length,
+                    "long_word_pct": stats.long_word_pct,
+                    "cefr_hint": stats.cefr_hint,
+                    "cefr_confidence": stats.cefr_confidence,
+                }
+            )
+
+        if include_flesch:
+            payload["flesch_douma"] = stats.flesch_douma
+
+        return ReadabilityResponse(**payload)  # type: ignore[arg-type]
+
+    except ValueError as ve:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(ve))
+    except Exception as e:
+        logger.error(f"Readability analysis failed: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Readability analysis failed: {str(e)}",
         )

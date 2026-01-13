@@ -34,6 +34,40 @@ curl -s -X POST BASE/api/v1/analyze \
   }'
 ```
 
+## Leesbaarheid / Taalniveau
+
+Endpoint: `POST /api/v1/analyze/readability`
+
+```bash
+curl -s -X POST BASE/api/v1/analyze/readability \
+  -H "Content-Type: application/json" \
+  -d '{
+    "text": "Dit is een eenvoudige Nederlandse zin. Nog een simpele zin.",
+    "language": "nl",
+    "metrics": ["lix","stats","flesch_douma"]
+  }'
+```
+
+Voorbeeldresponse:
+```json
+{
+  "lix": 28.5,
+  "avg_sentence_length": 12.0,
+  "long_word_pct": 16.67,
+  "word_count": 24,
+  "sentence_count": 2,
+  "flesch_douma": 68.2,
+  "cefr_hint": "B1",
+  "cefr_confidence": 0.5,
+  "metrics_computed": ["flesch_douma","lix","stats"]
+}
+```
+
+Notities:
+- LIX: woord/zin + percentage lange woorden (>6 letters).
+- Flesch–Douma: indicatieve score (benadering). Ranges zijn richtinggevend.
+- CEFR-hint is afgeleid van LIX en bij benadering; confidence is bewust laag/midden.
+
 ## Anonymize Text
 ```bash
 curl -s -X POST BASE/api/v1/anonymize \
