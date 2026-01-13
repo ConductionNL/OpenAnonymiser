@@ -221,7 +221,7 @@ class ReadabilityResponse(BaseModel):
     """Response DTO for readability analysis."""
 
     # Metadata fields (top-level, for tracing/debugging)
-    request_id: str
+    request_id: Optional[str] = None  # Only present if X-Request-Id header was provided
     input_hash: str
     meta: Optional[SourceMeta] = None
 

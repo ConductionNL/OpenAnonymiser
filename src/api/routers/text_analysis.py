@@ -2,7 +2,6 @@ import hashlib
 import logging
 import re
 import time
-import uuid
 from typing import Optional
 
 from fastapi import APIRouter, Header, HTTPException, status
@@ -199,8 +198,8 @@ async def analyze_readability(
     Headers:
         X-Request-Id: Optional correlation ID. If not provided, a UUIDv4 is generated.
     """
-    # Determine request_id: use header or generate
-    req_id = x_request_id if x_request_id else str(uuid.uuid4())
+    # Only use request_id if client provided it via header
+    req_id = x_request_id  # None if not provided
 
     try:
         # Manual input validation → return 400, not 422
@@ -256,7 +255,8 @@ async def analyze_readability(
             payload["flesch_douma"] = stats.flesch_douma
             payload["flesch_douma_status"] = stats.flesch_douma_status
 
-        logger.debug(f"Readability analysis completed [request_id={req_id}]")
+        if req_id:
+            logger.debug(f"Readability analysis completed [request_id={req_id}]")
         return ReadabilityResponse(**payload)  # type: ignore[arg-type]
 
     except ValueError as ve:
@@ -265,10 +265,10 @@ async def analyze_readability(
         # Preserve explicit HTTP errors (e.g., our 400 validations)
         raise he
     except Exception as e:
-        logger.error(
-            f"Readability analysis failed [request_id={req_id}]: {str(e)}",
-            exc_info=True,
-        )
+        log_msg = "Readability analysis failed"
+        if req_id:
+            log_msg += f" [request_id={req_id}]"
+        logger.error(f"{log_msg}: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Readability analysis failed: {str(e)}",

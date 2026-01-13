@@ -1,7 +1,6 @@
 """Tests for readability endpoint metadata (request_id, input_hash, meta)."""
 
 import os
-import re
 import sys
 
 sys.path.insert(0, os.path.abspath("."))
@@ -22,8 +21,8 @@ def client():
 # -----------------------------------------------------------------------------
 
 
-def test_request_id_generated_when_missing(client):
-    """When no X-Request-Id header is sent, server generates a UUIDv4."""
+def test_request_id_null_when_not_provided(client):
+    """When no X-Request-Id header is sent, request_id should be null."""
     resp = client.post(
         "/api/v1/analyze/readability",
         json={"text": "Dit is een testzin.", "language": "nl"},
@@ -31,11 +30,7 @@ def test_request_id_generated_when_missing(client):
     assert resp.status_code == 200
     data = resp.json()
     assert "request_id" in data
-    # UUIDv4 format: 8-4-4-4-12 hex
-    uuid_pattern = re.compile(
-        r"^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$", re.I
-    )
-    assert uuid_pattern.match(data["request_id"]), f"Not a valid UUIDv4: {data['request_id']}"
+    assert data["request_id"] is None
 
 
 def test_request_id_from_header(client):

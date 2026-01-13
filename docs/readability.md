@@ -24,7 +24,7 @@ Elke response bevat metadata voor tracing en reproduceerbaarheid:
 
 | Veld | Type | Beschrijving |
 |------|------|--------------|
-| `request_id` | string | Correlatie-ID. Wordt overgenomen uit `X-Request-Id` header; als deze ontbreekt genereert de server een UUIDv4. |
+| `request_id` | string\|null | Correlatie-ID. Wordt alleen gevuld als de client een `X-Request-Id` header meestuurt; anders `null`. |
 | `input_hash` | string | SHA-256 fingerprint van de genormaliseerde input: `sha256:<hex>`. Normalisatie: strip leading/trailing whitespace, vervang meerdere spaties door één. |
 | `meta` | object\|null | Echo van de `meta` uit het request, of `null` als niet meegegeven. |
 
