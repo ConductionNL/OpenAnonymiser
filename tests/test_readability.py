@@ -53,5 +53,4 @@ def test_readability_flesch_optional():
     data = resp.json()
     assert "flesch_douma" in data
     assert data["flesch_douma"] is None or isinstance(data["flesch_douma"], float)
-*** End Patch
 

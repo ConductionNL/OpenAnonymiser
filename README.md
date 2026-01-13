@@ -7,6 +7,7 @@ Presidio-NL is een modulaire API-service voor het detecteren en anonimiseren van
 Zie ook:
 - Gebruikshandleiding met Swagger-stappen: `docs/use-cases.md`
 - API voorbeelden (curl): `docs/api-examples.md`
+- Leesbaarheid/taalniveau uitleg: `docs/readability.md`
 - Productie Swagger: https://api.openanonymiser.commonground.nu/api/v1/docs
 - Staging Swagger: https://api.openanonymiser.accept.commonground.nu/api/v1/docs
 

@@ -62,6 +62,10 @@ class Settings:
     BASIC_AUTH_USERNAME = os.getenv("BASIC_AUTH_USERNAME", "admin")
     BASIC_AUTH_PASSWORD = os.getenv("BASIC_AUTH_PASSWORD", "password")
 
+    # Readability configuration
+    # Long words are defined as strictly more than LONG_WORD_LEN - 1 letters (default > 6)
+    LONG_WORD_LEN = int(os.getenv("LONG_WORD_LEN", "7"))
+
 
 settings: Settings = Settings()
 

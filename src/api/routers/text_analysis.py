@@ -180,15 +180,30 @@ async def analyze_readability(
     This does not anonymize or alter the text; pure analysis only.
     """
     try:
+        # Manual input validation → return 400, not 422
+        clean_text = (request.text or "").strip()
+        if not clean_text:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail="Text cannot be empty"
+            )
+        if len(clean_text) > 200_000:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Text too long; please submit <= 200,000 characters",
+            )
         metrics_requested = {m.lower() for m in (request.metrics or ["lix", "stats"])}
         include_flesch = "flesch_douma" in metrics_requested
 
-        stats = compute_readability(request.text, include_flesch_douma=include_flesch)
+        stats = compute_readability(clean_text, include_flesch_douma=include_flesch)
 
         payload = {
             "word_count": stats.word_count,
             "sentence_count": stats.sentence_count,
+            "syllables_per_word": stats.syllables_per_word,
             "metrics_computed": sorted(list(metrics_requested)),
+            "judgement": stats.judgement,
+            "cefr_hint": stats.cefr_hint,
+            "cefr_confidence": stats.cefr_confidence,
         }
 
         if "lix" in metrics_requested:
@@ -197,18 +212,20 @@ async def analyze_readability(
                     "lix": stats.lix,
                     "avg_sentence_length": stats.avg_sentence_length,
                     "long_word_pct": stats.long_word_pct,
-                    "cefr_hint": stats.cefr_hint,
-                    "cefr_confidence": stats.cefr_confidence,
                 }
             )
 
         if include_flesch:
             payload["flesch_douma"] = stats.flesch_douma
+            payload["flesch_douma_status"] = stats.flesch_douma_status
 
         return ReadabilityResponse(**payload)  # type: ignore[arg-type]
 
     except ValueError as ve:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(ve))
+    except HTTPException as he:
+        # Preserve explicit HTTP errors (e.g., our 400 validations)
+        raise he
     except Exception as e:
         logger.error(f"Readability analysis failed: {str(e)}", exc_info=True)
         raise HTTPException(

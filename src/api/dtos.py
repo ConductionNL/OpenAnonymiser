@@ -201,16 +201,6 @@ class ReadabilityRequest(BaseModel):
     language: str = settings.DEFAULT_LANGUAGE
     metrics: Optional[list[str]] = None  # e.g., ["lix", "flesch_douma", "stats"]
 
-    @field_validator("text")
-    def validate_text_not_empty(cls, value: str) -> str:
-        clean = (value or "").strip()
-        if not clean:
-            raise ValueError("Text cannot be empty")
-        # Reject extremely long inputs to avoid abuse (e.g., > 200k chars)
-        if len(clean) > 200_000:
-            raise ValueError("Text too long; please submit <= 200,000 characters")
-        return clean
-
     @field_validator("language")
     def validate_language(cls, value: str) -> str:
         if value not in ["nl"]:
@@ -223,10 +213,14 @@ class ReadabilityResponse(BaseModel):
 
     lix: Optional[float] = None
     flesch_douma: Optional[float] = None
+    flesch_douma_status: Optional[str] = None
     avg_sentence_length: Optional[float] = None
     long_word_pct: Optional[float] = None
     word_count: int
     sentence_count: int
     cefr_hint: Optional[str] = None
     cefr_confidence: Optional[float] = None
+    syllables_per_word: Optional[float] = None
+
+    judgement: dict
     metrics_computed: list[str]
