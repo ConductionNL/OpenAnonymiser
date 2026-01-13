@@ -194,12 +194,21 @@ class AnonymizeTextResponse(BaseModel):
 
 # ===== READABILITY ENDPOINT DTOs =====
 
+
+class SourceMeta(BaseModel):
+    """Optional source metadata for readability requests."""
+
+    source_type: Optional[str] = None  # file|form|api|unknown
+    source_name: Optional[str] = None
+
+
 class ReadabilityRequest(BaseModel):
     """Request DTO for POST /api/v1/analyze/readability endpoint."""
 
     text: str
     language: str = settings.DEFAULT_LANGUAGE
     metrics: Optional[list[str]] = None  # e.g., ["lix", "flesch_douma", "stats"]
+    meta: Optional[SourceMeta] = None  # Optional source metadata
 
     @field_validator("language")
     def validate_language(cls, value: str) -> str:
@@ -211,6 +220,12 @@ class ReadabilityRequest(BaseModel):
 class ReadabilityResponse(BaseModel):
     """Response DTO for readability analysis."""
 
+    # Metadata fields (top-level, for tracing/debugging)
+    request_id: str
+    input_hash: str
+    meta: Optional[SourceMeta] = None
+
+    # Metrics
     lix: Optional[float] = None
     flesch_douma: Optional[float] = None
     flesch_douma_status: Optional[str] = None

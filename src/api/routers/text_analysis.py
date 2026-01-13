@@ -1,8 +1,11 @@
+import hashlib
 import logging
+import re
 import time
+import uuid
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, Header, HTTPException, status
 
 from src.api.config import settings
 from src.api.dtos import (
@@ -18,6 +21,19 @@ from src.api.utils.readability import compute_readability
 
 logger = logging.getLogger(__name__)
 text_analysis_router = APIRouter(tags=["text-analysis"])
+
+
+def _normalize_text_for_hash(text: str) -> str:
+    """Normalize text for hashing: strip and collapse whitespace."""
+    stripped = text.strip()
+    return re.sub(r"\s+", " ", stripped)
+
+
+def _compute_input_hash(text: str) -> str:
+    """Compute SHA-256 hash of normalized text."""
+    normalized = _normalize_text_for_hash(text)
+    digest = hashlib.sha256(normalized.encode("utf-8")).hexdigest()
+    return f"sha256:{digest}"
 
 
 def create_pii_entities_from_results(results: list[dict]) -> list[PIIEntity]:
@@ -174,11 +190,18 @@ async def anonymize_text(
 @text_analysis_router.post("/analyze/readability")
 async def analyze_readability(
     request: ReadabilityRequest,
+    x_request_id: Optional[str] = Header(None, alias="X-Request-Id"),
 ) -> ReadabilityResponse:
     """Compute readability metrics (LIX, basic stats, optional Flesch–Douma) for Dutch text.
 
     This does not anonymize or alter the text; pure analysis only.
+
+    Headers:
+        X-Request-Id: Optional correlation ID. If not provided, a UUIDv4 is generated.
     """
+    # Determine request_id: use header or generate
+    req_id = x_request_id if x_request_id else str(uuid.uuid4())
+
     try:
         # Manual input validation → return 400, not 422
         clean_text = (request.text or "").strip()
@@ -191,12 +214,20 @@ async def analyze_readability(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Text too long; please submit <= 200,000 characters",
             )
+
+        # Compute input hash for fingerprinting (uses original text)
+        input_hash = _compute_input_hash(request.text)
+
         metrics_requested = {m.lower() for m in (request.metrics or ["lix", "stats"])}
         include_flesch = "flesch_douma" in metrics_requested
 
         stats = compute_readability(clean_text, include_flesch_douma=include_flesch)
 
-        payload = {
+        # Build payload with metadata first
+        payload: dict = {
+            "request_id": req_id,
+            "input_hash": input_hash,
+            "meta": request.meta.model_dump() if request.meta else None,
             "word_count": stats.word_count,
             "sentence_count": stats.sentence_count,
             "metrics_computed": sorted(list(metrics_requested)),
@@ -225,6 +256,7 @@ async def analyze_readability(
             payload["flesch_douma"] = stats.flesch_douma
             payload["flesch_douma_status"] = stats.flesch_douma_status
 
+        logger.debug(f"Readability analysis completed [request_id={req_id}]")
         return ReadabilityResponse(**payload)  # type: ignore[arg-type]
 
     except ValueError as ve:
@@ -233,7 +265,10 @@ async def analyze_readability(
         # Preserve explicit HTTP errors (e.g., our 400 validations)
         raise he
     except Exception as e:
-        logger.error(f"Readability analysis failed: {str(e)}", exc_info=True)
+        logger.error(
+            f"Readability analysis failed [request_id={req_id}]: {str(e)}",
+            exc_info=True,
+        )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Readability analysis failed: {str(e)}",

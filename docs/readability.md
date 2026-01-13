@@ -8,10 +8,32 @@ Deze endpoint analyseert Nederlandse tekst op leesbaarheid en geeft deterministi
   {
     "text": "…",
     "language": "nl",
-    "metrics": ["lix", "flesch_douma", "stats"]
+    "metrics": ["lix", "flesch_douma", "stats"],
+    "meta": {
+      "source_type": "file|form|api|unknown",
+      "source_name": "optionele_bestandsnaam.txt"
+    }
   }
   ```
 - Default metrics als `metrics` ontbreekt: `["lix","stats"]`.
+- Het veld `meta` is optioneel en wordt ongewijzigd teruggegeven in de response.
+
+## Metadata (tracing & fingerprinting)
+
+Elke response bevat metadata voor tracing en reproduceerbaarheid:
+
+| Veld | Type | Beschrijving |
+|------|------|--------------|
+| `request_id` | string | Correlatie-ID. Wordt overgenomen uit `X-Request-Id` header; als deze ontbreekt genereert de server een UUIDv4. |
+| `input_hash` | string | SHA-256 fingerprint van de genormaliseerde input: `sha256:<hex>`. Normalisatie: strip leading/trailing whitespace, vervang meerdere spaties door één. |
+| `meta` | object\|null | Echo van de `meta` uit het request, of `null` als niet meegegeven. |
+
+### Toepassingen
+
+- **request_id**: Correlatie in logs, tracing door meerdere systemen.
+- **input_hash**: Caching, regressietests, deduplicatie. De hash bevat **geen persoonsgegevens** – het is een hash van de ruwe tekst.
+
+> **Let op:** Deze API verwerkt geen bestanden. De `meta.source_name` is puur informatief en wordt niet gevalideerd.
 
 ## Metrics
 
@@ -112,16 +134,21 @@ Request:
 ```bash
 curl -s -X POST "$BASE/api/v1/analyze/readability" \
   -H "Content-Type: application/json" \
+  -H "X-Request-Id: mijn-correlatie-id-123" \
   -d '{
         "text": "De gemeente publiceert vandaag een overzicht van nieuwe beleidsmaatregelen. Deze maatregelen zijn bedoeld om de dienstverlening te verbeteren en processen te vereenvoudigen. Burgers kunnen via het digitale loket meer informatie vinden en vragen stellen. Daarnaast worden bestaande procedures afgestemd op recente wetgeving.",
         "language": "nl",
-        "metrics": ["lix","stats","flesch_douma"]
+        "metrics": ["lix","stats","flesch_douma"],
+        "meta": {"source_type": "api", "source_name": "test-document"}
       }'
 ```
 
 Response (voorbeeld):
 ```json
 {
+  "request_id": "mijn-correlatie-id-123",
+  "input_hash": "sha256:a1b2c3d4e5f6...",
+  "meta": {"source_type": "api", "source_name": "test-document"},
   "lix": 60.5,
   "flesch_douma": null,
   "flesch_douma_status": "invalid_syllable_estimate",
