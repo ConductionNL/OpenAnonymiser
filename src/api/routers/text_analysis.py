@@ -195,8 +195,20 @@ async def analyze_readability(
 
     This does not anonymize or alter the text; pure analysis only.
 
-    Headers:
-        X-Request-Id: Optional correlation ID. If not provided, a UUIDv4 is generated.
+    **Headers:**
+    - `X-Request-Id`: Optional correlation ID. Echoed in response if provided; otherwise `null`.
+
+    **Request body:**
+    - `text`: The Dutch text to analyze.
+    - `language`: Must be `"nl"` (only Dutch supported).
+    - `metrics`: Optional list of metrics to compute. Default: `["lix", "stats"]`.
+    - `meta`: Optional metadata object, echoed back in response.
+
+    **Response includes:**
+    - `request_id`, `input_hash`: For tracing and caching.
+    - `lix`, `avg_sentence_length`, `long_word_pct`: Readability stats.
+    - `judgement`: Deterministic band (easy/medium/complex/very_complex) with drivers.
+    - `flesch_douma` (optional): Only if requested via metrics.
     """
     # Only use request_id if client provided it via header
     req_id = x_request_id  # None if not provided
