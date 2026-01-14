@@ -229,7 +229,9 @@ async def analyze_readability(
         # Compute input hash for fingerprinting (uses original text)
         input_hash = _compute_input_hash(request.text)
 
-        metrics_requested = {m.lower() for m in (request.metrics or ["lix", "stats"])}
+        # Default: all metrics if none specified
+        default_metrics = ["lix", "stats", "flesch_douma"]
+        metrics_requested = {m.lower() for m in (request.metrics or default_metrics)}
         include_flesch = "flesch_douma" in metrics_requested
 
         stats = compute_readability(clean_text, include_flesch_douma=include_flesch)

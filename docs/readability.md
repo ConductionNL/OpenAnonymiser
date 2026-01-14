@@ -15,7 +15,7 @@ Deze endpoint analyseert Nederlandse tekst op leesbaarheid en geeft deterministi
     }
   }
   ```
-- Default metrics als `metrics` ontbreekt: `["lix","stats"]`.
+- Default metrics als `metrics` ontbreekt: `["lix", "stats", "flesch_douma"]` (alle metrics).
 - Het veld `meta` is optioneel en wordt ongewijzigd teruggegeven in de response.
 
 ## Metadata (tracing & fingerprinting)
