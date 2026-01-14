@@ -40,12 +40,18 @@ RUN mkdir -p /home/presidio/.cache/transformers /home/presidio/.cache/huggingfac
 
 # Download a Dutch NER model for transformers in a separate layer
 # Using a model with a token-classification head (NER)
+# Retry up to 3 times to handle transient HuggingFace failures
 RUN MODEL_NAME="wietsedv/bert-base-dutch-cased-ner" && \
     echo "Downloading ${MODEL_NAME}..." && \
-    .venv/bin/python -c "from transformers import AutoTokenizer, AutoModelForTokenClassification; \
-    tokenizer = AutoTokenizer.from_pretrained('${MODEL_NAME}', cache_dir='${TRANSFORMERS_CACHE}'); \
-    model = AutoModelForTokenClassification.from_pretrained('${MODEL_NAME}', cache_dir='${TRANSFORMERS_CACHE}'); \
-    print('Model downloaded successfully!')"
+    for i in 1 2 3; do \
+        .venv/bin/python -c "from transformers import AutoTokenizer, AutoModelForTokenClassification; \
+        tokenizer = AutoTokenizer.from_pretrained('${MODEL_NAME}', cache_dir='${TRANSFORMERS_CACHE}'); \
+        model = AutoModelForTokenClassification.from_pretrained('${MODEL_NAME}', cache_dir='${TRANSFORMERS_CACHE}'); \
+        print('Model downloaded successfully!')" && break || { \
+            echo "Attempt $i failed, retrying in 10s..."; \
+            sleep 10; \
+        }; \
+    done
 
 
 COPY --chown=presidio:presidio src/api ./src/api
