@@ -57,7 +57,10 @@ RUN MODEL_NAME="wietsedv/bert-base-dutch-cased-ner" && \
 COPY --chown=presidio:presidio src/api ./src/api
 COPY --chown=presidio:presidio api.py ./
 COPY --chown=presidio:presidio scripts/healthcheck.py ./scripts/
+COPY --chown=presidio:presidio config ./config
 
+# Default to online profile for production/staging
+ENV READABILITY_PROFILE=online
 
 EXPOSE 8080
 
