@@ -66,6 +66,21 @@ recognizers:
     type: pattern
     enabled: true
 
+  - name: gliner_recognizer
+    type: gliner
+    enabled: true
+    model: "urchade/gliner_multi_pii-v1"
+    entity_mapping:
+      person: PERSON
+      name: PERSON
+      organization: ORGANIZATION
+      location: LOCATION
+      gpe: LOCATION
+    flat_ner: false
+    multi_label: true
+    map_location: "cpu"
+    supported_language: "nl"
+
   # Optionele modules — standaard uitgeschakeld.
   # Schakel in door enabled: true te zetten en de vereiste packages te installeren.
 
