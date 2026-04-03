@@ -36,7 +36,7 @@ jobs:
           sleep 15  # wait for SpaCy model load + pre-warm
 
       - name: Run test suite
-        run: pytest tests/ -q
+        run: uv run pytest tests/ -q
 
       - name: Stop API
         if: always()
