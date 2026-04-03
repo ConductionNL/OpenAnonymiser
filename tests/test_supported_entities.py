@@ -7,6 +7,7 @@ Run: pytest tests/test_supported_entities.py -v
 """
 
 import httpx
+import pytest
 
 
 def _detected_types(client: httpx.Client, text: str, entities: list[str]) -> set[str]:
@@ -67,6 +68,7 @@ class TestNEREntities:
             assert 0.0 < e["score"] <= 1.0
 
 
+@pytest.mark.skip(reason="Pattern recognizers disabled in plugins.yaml")
 class TestPatternEntities:
     """Regex pattern recognizer entities."""
 
@@ -172,6 +174,7 @@ class TestPatternEntities:
         assert "KVK_NUMBER" in types
 
 
+@pytest.mark.skip(reason="Pattern recognizers disabled in plugins.yaml")
 class TestEmailNotOrganization:
     """Regression: SpaCy NER must not tag emails as ORGANIZATION."""
 
@@ -217,6 +220,7 @@ class TestEmailNotOrganization:
         assert "EMAIL" in types
 
 
+@pytest.mark.skip(reason="Pattern recognizers disabled in plugins.yaml")
 class TestPhoneVsDriversLicense:
     """Presidio returns all matching entity types per span (cross-type is by design).
 

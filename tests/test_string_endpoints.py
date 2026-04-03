@@ -5,6 +5,7 @@ Run: pytest tests/test_string_endpoints.py -v
 """
 
 import httpx
+import pytest
 
 
 class TestHealth:
@@ -139,6 +140,7 @@ class TestAnonymizeStructure:
         assert "Jan Jansen" not in data["anonymized_text"]
 
 
+@pytest.mark.skip(reason="Pattern recognizers disabled in plugins.yaml")
 class TestAnonymizeStrategies:
     def test_replace_uses_entity_placeholder(self, client: httpx.Client) -> None:
         r = client.post(
