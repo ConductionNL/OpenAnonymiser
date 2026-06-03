@@ -6,7 +6,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/ConductionNL/OpenAnonymiser.git
+    repoURL: https://codeberg.org/Conduction/OpenAnonymiser.git
     targetRevision: main  # ← Production wijst naar main branch
     path: charts/openanonymiser
   destination:
