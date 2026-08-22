@@ -1,6 +1,6 @@
-# OpenAnonymizer: Modulaire PII-detectie voor Nederlandse tekst
+# Anonymiq: Modulaire PII-detectie voor Nederlandse tekst
 
-Presidio-NL is een modulaire API-service voor het detecteren en anonimiseren van privacygevoelige informatie (PII) in Nederlandse tekst. De service is gebaseerd op [Microsoft Presidio](https://github.com/microsoft/presidio) en biedt ondersteuning voor verschillende NLP-modellen (zoals spaCy of HuggingFace transformers) zonder dat de API of logica hoeft te worden aangepast.
+Anonymiq is een modulaire API-service voor het detecteren en anonimiseren van privacygevoelige informatie (PII) in Nederlandse tekst. De service is gebaseerd op [Microsoft Presidio](https://github.com/microsoft/presidio) en biedt ondersteuning voor verschillende NLP-modellen (zoals spaCy of HuggingFace transformers) zonder dat de API of logica hoeft te worden aangepast.
 
 ## Installatie & Gebruik
 
@@ -46,13 +46,13 @@ Kies patterns voor “vormvaste” entiteiten, en NLP voor “vrije‑tekst” e
 Bouw het backend image:
 
 ```bash
-docker build -t openanonymizer .
+docker build -t anonymiq .
 ```
 
 Start alleen de backend container:
 
 ```bash
-docker run -d -p 8001:8080 --name openanonymiser openanonymizer
+docker run -d -p 8001:8080 --name anonymiq anonymiq
 ```
 
 API bereikbaar op [http://localhost:8001/api/v1/docs](http://localhost:8001/api/v1/docs)
@@ -61,8 +61,10 @@ API bereikbaar op [http://localhost:8001/api/v1/docs](http://localhost:8001/api/
 
 **⚠️ KRITIEKE VEREISTE: PERSISTENT STORAGE** 
 
-OpenAnonymiser vereist persistent storage voor:
-- SQLite database (`/app/openanonymiser.db`)
+Anonymiq vereist persistent storage voor:
+- SQLite database (`/app/openanonymiser.db` — de bestandsnaam blijft bewust
+  ongewijzigd; het bestand staat al op de PVC en een hernoeming zou stilzwijgend
+  een lege database aanmaken)
 - Geüploade PDF-bestanden (`/app/temp/source/`) 
 - Geanonimiseerde bestanden (`/app/temp/anonymized/`)
 - Applicatielogs (`/app/logs/`)
@@ -148,8 +150,12 @@ Gebruik de nieuwe use-case tests in `tests/test_usecases.py`. Stel een BASE URL 
 # Tegen lokale server
 pytest -q -k usecases
 
-# Tegen staging of productie
-OPENANONYMISER_BASE_URL="https://api.openanonymiser.accept.commonground.nu" pytest -q -k usecases
+# Tegen staging of productie.
+# De hostnames blijven `api.openanonymiser.*` — die DNS-namen zijn live en
+# `api.anonymiq.*` bestaat nog niet. De env-var heet nu ANONYMIQ_BASE_URL;
+# OPENANONYMISER_BASE_URL wordt nog steeds gelezen zodat bestaande scripts
+# blijven werken.
+ANONYMIQ_BASE_URL="https://api.openanonymiser.accept.commonground.nu" pytest -q -k usecases
 # of
-OPENANONYMISER_BASE_URL="https://api.openanonymiser.commonground.nu" pytest -q -k usecases
+ANONYMIQ_BASE_URL="https://api.openanonymiser.commonground.nu" pytest -q -k usecases
 ```

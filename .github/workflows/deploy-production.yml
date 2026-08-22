@@ -120,7 +120,7 @@ jobs:
           tag_name: ${{ steps.version.outputs.version }}
           release_name: Release ${{ steps.version.outputs.version }}
           body: |
-            ## 🚀 OpenAnonymiser ${{ steps.version.outputs.version }}
+            ## 🚀 Anonymiq ${{ steps.version.outputs.version }}
             
             ### ✨ Features
             - **POST /api/v1/analyze** - String-based PII analysis with confidence scores
