@@ -1,4 +1,4 @@
-# OpenAnonymiser Deployment Guide
+# Anonymiq Deployment Guide
 
 ## 🚀 GitOps Workflow Overview
 
